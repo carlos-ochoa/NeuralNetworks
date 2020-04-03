@@ -34,23 +34,15 @@ def backprop_deriv(x,a,d,layers):
     dCw, dCb = [0 for a in range(len(layers))], [0 for a in range(len(layers))]
     for l in reversed(range(len(layers))):
         d_a = []
-
-        #print(l)
         if l == 0:
             for k in range(len(x)):
                 d_a.append(((x[k] * d[l]).T)[0])
             d_a = np.array(d_a)
-            #print(d_a.shape)
             dCw[l] = d_a
         else:
             for k in range(len(a[l-1])):
-                #print('a[',l-1,'][',k,']',a[l-1][k], a[l-1][k].shape)
-                #print('d[',l,']',d[l],d[l].shape)
-                #print((a[l-1][k] * d[l]).T.shape)
                 d_a.append(((a[l-1][k] * d[l]).T)[0])
             d_a = np.array(d_a)
-        #    print(d_a.shape)
-        #    print(d_a)
             dCw[l] = d_a
         dCb[l] = d[l]
     return dCw, dCb
@@ -58,11 +50,6 @@ def backprop_deriv(x,a,d,layers):
 def gradient_descent(W,b,dCw,dCb,layers,alpha = 0.01,momentum = False):
     # Recorremos cada uno de los vectores de pesos de las capas
     for l in range(len(layers)):
-        #print(l)
-        #print('dCw',dCw[l].shape)
-        #print('dCb',dCb[l].shape)
-        #print(b[l].shape)
-        #print(W[l].shape,dCw[l].T.shape)
         W[l] -= alpha * dCw[l].T
         b[l] -= alpha * dCb[l].T
     return W,b
@@ -100,8 +87,19 @@ def classify(Y):
         i = 0
     return c_y
 
+def split_data(X,Y):
+    X_tr = np.concatenate((X[:40],X[50:90],X[100:140]))
+    Y_tr = np.concatenate((Y[:40],Y[50:90],Y[100:140]))
+    X_t = np.concatenate((X[40:50],X[90:100],X[140:]))
+    Y_t = np.concatenate((Y[40:50],Y[90:100],Y[140:]))
+    print(X_t)
+    print(X_tr)
+    print(Y_t)
+    print(Y_tr)
+    return X,Y,X_t,Y_t
+
 def main():
-    iter = 1000
+    iter = 3500
     i , j = 0 , 0
     layers = [3,10,3]
     d = [0 for a in range(len(layers))]
@@ -112,45 +110,31 @@ def main():
     X = iris.data[:, :layers[0]]
     Y = iris.target
     Y = one_hot(Y)
+    X,Y,X_t,Y_t = split_data(X,Y)
+    c = []
     tags = make_tags(X,Y)
     # Inicializamos los pesos por cada capa
     W,b = initialize_parameters(layers)
     # Comenzamos el entrenamiento
     for e in range(iter):
         j = 0
+        c.clear()
         for x in X:
             inputs = x
             i = 0
-            #print(inputs.shape)
-            #print('empieza',W)
             for l in range(len(layers)):
                 # Propagación hacia adelante
                 z = W[l].dot(inputs) + b[l]
-                #print('z',z.shape)
                 Z.append(z)
                 inputs = sigmoid_function(z)[0]
-                #print('i',inputs.shape)
                 a.append(inputs)
-                #print(inputs)
             final_output = inputs
-            #print('termina')
+            c.append(final_output)
             # Calculamos el error delta de la última capa de la red
             # Derivada de la función de costo con respecto a la activación de la última capa
-            #print('final',final_output.shape)
-            #print('Y',Y[0].shape)
-            #print('final-Y',(final_output - Y[0]).shape)
-            #print('Sigmoid der',sigmoid_derivative(Z[-1]).shape)
-            #print(final_output)
-            #print(Y[0])
-            #print(sigmoid_derivative(Z[-1]))
             d[-1] = ((final_output - Y[j]) * sigmoid_derivative(Z[-1])).T
-            #print(d[-1])
-            #print('d-1',d[-1].shape)
             j += 1
             for l in reversed(range(len(layers)-1)):
-            #    print('W.T',W[l+1].T.shape)
-            #    print('d',d[l+1].shape)
-            #    print('sigmoid',sigmoid_derivative(Z[l]).T.shape)
                 d[l] = (W[l+1].T.dot(d[l+1]) * sigmoid_derivative(Z[l]).T)
             # Calculamos las derivadas finales
             dCw,dCb = backprop_deriv(x,a,d,layers)
@@ -158,7 +142,17 @@ def main():
             Z.clear()
             a.clear()
         print('Epoca ', e)
-        #print(Y.shape)
-        #print(final_output.shape)
         print(final_output)
+    for o in c:
+        print(o)
+    # Ahora va la fase de prueba
+    print("prueba")
+    for x in X_t:
+        inputs = x
+        for l in range(len(layers)):
+            # Propagación hacia adelante
+            z = W[l].dot(inputs) + b[l]
+            inputs = sigmoid_function(z)[0]
+        final_output = inputs
+        print(x,final_output)
 main()
